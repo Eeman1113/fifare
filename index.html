@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FIFA Piracy Stack — Security Research Replica</title>
+    <title>FIFA Piracy Stack — Standalone Dynamic Replica</title>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <style>
         :root {
@@ -36,16 +36,14 @@
         .match-bar .live-dot { color: var(--accent); animation: pulse 2s infinite; }
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
 
-        .api-status { padding: 8px 20px; font-size: 0.8rem; display: flex; align-items: center; gap: 8px; }
-        .api-status.online { background: rgba(46, 204, 113, 0.1); color: var(--green); }
-        .api-status.offline { background: rgba(231, 76, 60, 0.1); color: var(--accent); }
-        .api-status .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
-        .api-status.online .dot { background: var(--green); }
-        .api-status.offline .dot { background: var(--accent); }
+        .data-source { padding: 8px 20px; font-size: 0.8rem; display: flex; align-items: center; gap: 8px; }
+        .data-source.ok { background: rgba(46, 204, 113, 0.1); color: var(--green); }
+        .data-source.error { background: rgba(231, 76, 60, 0.1); color: var(--accent); }
+        .data-source .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+        .data-source.ok .dot { background: var(--green); }
+        .data-source.error .dot { background: var(--accent); }
 
         .main { display: grid; grid-template-columns: 1fr 340px; gap: 0; min-height: calc(100vh - 160px); }
-        .main.fullwidth { grid-template-columns: 1fr; }
-
         .video-section { padding: 20px; }
         .player-wrapper { background: #000; border-radius: 10px; overflow: hidden; aspect-ratio: 16/9; position: relative; border: 1px solid var(--border); }
         #video { width: 100%; height: 100%; object-fit: contain; }
@@ -104,13 +102,8 @@
         .report-tabs { display: flex; gap: 4px; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
         .report-tabs button { background: transparent; border: 1px solid var(--border); color: var(--text2); padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; }
         .report-tabs button:hover, .report-tabs button.active { background: var(--accent); border-color: var(--accent); color: #fff; }
-
         .report-panel { display: none; }
         .report-panel.active { display: block; }
-
-        .loading { color: var(--text3); font-size: 0.85rem; padding: 10px; }
-        .loading::after { content: "..."; animation: dots 1.5s infinite; }
-        @keyframes dots { 0%,20%{content: "."} 40%{content: ".."} 60%,100%{content: "..."} }
 
         @media (max-width: 900px) {
             .main { grid-template-columns: 1fr; }
@@ -122,7 +115,7 @@
 <body>
     <div class="topbar">
         <div>
-            <h1>⚡ Piracy Stack Replica <span class="badge">Security Research</span></h1>
+            <h1>⚡ Piracy Stack Replica <span class="badge">Standalone + Dynamic</span></h1>
         </div>
         <nav>
             <button class="active" onclick="showTab('demo')" id="btn-demo">Demo</button>
@@ -133,16 +126,16 @@
     <div class="match-bar">
         <label for="match-select">📺 Match:</label>
         <select id="match-select" onchange="changeMatch(this.value)" disabled>
-            <option value="">Loading matches from API...</option>
+            <option value="">Loading matches dynamically...</option>
         </select>
         <div class="match-info">
             <span class="live-dot">●</span> <span id="match-status">Loading...</span>
         </div>
     </div>
 
-    <div class="api-status offline" id="api-status">
+    <div class="data-source" id="data-source">
         <span class="dot"></span>
-        <span id="api-status-text">Checking API connection...</span>
+        <span id="data-source-text">Checking data sources...</span>
     </div>
 
     <div id="tab-demo" class="main">
@@ -168,7 +161,7 @@
             <div id="error-container"></div>
 
             <div class="info-box">
-                <strong>🔍 Architecture:</strong> This static page fetches match data dynamically from <code>http://localhost:8000/api/matches/live</code> and <code>http://localhost:8000/api/matches/all</code> — just like the real piracy site calls <code>streamed.pk</code>. No match list is hardcoded in the HTML. The backend API drives everything.
+                <strong>🔍 Architecture:</strong> This is a <strong>static HTML file</strong> with <strong>dynamic data</strong>. It fetches match data from <code>./matches.json</code> (a JSON file in the same repo). No backend, no server, no Docker needed. The JSON file is the "API" — update it, and the site reflects changes instantly. This is exactly how pirates host on GitHub Pages with zero backend costs.
             </div>
         </div>
 
@@ -414,6 +407,7 @@ export function middleware(request: NextRequest) {
             <h3>Exact Architecture on GitHub Pages</h3>
             <pre><code>github.com/someuser/sports-live (public or private repo)
 ├── index.html              ← Single file — the entire "app"
+├── matches.json            ← Dynamic data source (the "API")
 ├── .github/workflows/
 │   └── deploy.yml            ← Auto-deploy to GitHub Pages on push
 ├── CNAME                    ← Custom domain (optional)
@@ -423,11 +417,23 @@ export function middleware(request: NextRequest) {
             <ol>
                 <li><strong>GitHub Pages serves index.html</strong> — free, fast, global CDN</li>
                 <li><strong>Browser loads HLS.js from CDN</strong> — <code>cdn.jsdelivr.net/npm/hls.js@latest</code></li>
-                <li><strong>JavaScript fetches stream data</strong> — hardcoded in JS, or from external API, or from JSON file on another repo/gist</li>
+                <li><strong>JavaScript fetches matches.json</strong> — from same repo or external source (gist, raw GitHub, Pastebin, etc.)</li>
+                <li><strong>JSON contains all match data + stream URLs</strong> — dynamically populates the UI</li>
                 <li><strong>HLS.js plays the video</strong> — directly from external CDN (<code>lb8.strmd.st</code>)</li>
                 <li><strong>Telemetry beacons</strong> — sent to external endpoints (<code>ann.cdn-lab.shop</code>)</li>
                 <li><strong>Chat</strong> — embedded Twitch iframe or WebSocket to external server</li>
             </ol>
+
+            <h3>Data Source Options (The "API" Replacement)</h3>
+            <table>
+                <tr><th>Source</th><th>Cost</th><th>Speed</th><th>Takedown Difficulty</th></tr>
+                <tr><td>GitHub repo (matches.json)</td><td>$0</td><td>Instant</td><td>Hard — DMCA slow</td></tr>
+                <tr><td>GitHub Gist</td><td>$0</td><td>Instant</td><td>Hard — anonymous</td></tr>
+                <tr><td>Raw GitHub file (another repo)</td><td>$0</td><td>Instant</td><td>Hard — separate repo</td></tr>
+                <tr><td>Pastebin / JSONBin</td><td>$0</td><td>Fast</td><td>Medium — abuse reports</td></tr>
+                <tr><td>Cloudflare Workers</td><td>$0</td><td>Fast</td><td>Medium — account ban</td></tr>
+                <tr><td>Firebase / Supabase</td><td>$0</td><td>Fast</td><td>Medium — ToS violation</td></tr>
+            </table>
 
             <h3>GitHub's DMCA Process (The Slow Kill)</h3>
             <ol>
@@ -456,7 +462,8 @@ export function middleware(request: NextRequest) {
             <p>The frontend is useless without working video streams. Focus on <code>strmd.st</code> and similar CDN domains. Issue takedowns to CDN hosting providers. Court-ordered IP blocking (Italy's Piracy Shield: 30 min).</p>
 
             <h4>Strategy 2: Disrupt Stream Discovery</h4>
-            <p>If the frontend relies on an external API (<code>streamed.pk</code> style), takedown the API — this is the <strong>brain</strong> of the operation. Without the API, the frontend can't find streams.</p>
+            <p>If the frontend fetches from an external API (<code>streamed.pk</code> style), takedown the API — this is the <strong>brain</strong> of the operation. Without the API, the frontend can't find streams.</p>
+            <p>If the frontend uses a JSON file in the same repo, DMCA the repo. If it uses a Gist, report the Gist. If it uses Pastebin, report the Pastebin.</p>
 
             <h4>Strategy 3: GitHub-Specific Takedown</h4>
             <ul>
@@ -554,7 +561,7 @@ export function middleware(request: NextRequest) {
                 <li>File DMCA complaint with Twitch for channel adiiixexe</li>
                 <li>Submit abuse report to dpdns.org for livsport subdomain</li>
                 <li>Identify and contact strmd.st hosting provider / CDN operator</li>
-                <li>Add all domains to monitoring watchlist</li>
+                <li>Add all domains to continuous monitoring watchlist</li>
                 <li>Capture HLS manifests and video segments as evidence</li>
                 <li>Record WHOIS, DNS, and ASN data for all domains</li>
                 <li>File for dynamic injunctions in India, UK, France, Italy, Brazil</li>
@@ -566,10 +573,19 @@ export function middleware(request: NextRequest) {
 
     <script>
         // ============================================================
-        // DYNAMIC MATCH LOADING — NO HARDCODED LIST
+        // STANDALONE DYNAMIC — NO BACKEND NEEDED
+        // Fetches matches.json from same directory (or external sources)
         // ============================================================
 
-        const API_BASE = 'http://localhost:8000';
+        const DATA_SOURCES = [
+            './matches.json',                                    // Same repo (GitHub Pages)
+            './data/matches.json',                               // Subfolder
+            // External fallback sources pirates might use:
+            // 'https://gist.githubusercontent.com/user/gist-id/raw/matches.json',
+            // 'https://raw.githubusercontent.com/user/repo/main/matches.json',
+            // 'https://api.jsonbin.io/v3/b/bin-id',
+        ];
+
         let matches = [];
         let currentMatch = null;
         let hls = null;
@@ -601,87 +617,100 @@ export function middleware(request: NextRequest) {
         }
 
         // ============================================================
-        // API STATUS
+        // DATA SOURCE STATUS
         // ============================================================
 
-        function setApiStatus(online, text) {
-            const el = document.getElementById('api-status');
-            const txt = document.getElementById('api-status-text');
-            el.className = 'api-status ' + (online ? 'online' : 'offline');
+        function setDataSource(ok, text) {
+            const el = document.getElementById('data-source');
+            const txt = document.getElementById('data-source-text');
+            el.className = 'data-source ' + (ok ? 'ok' : 'error');
             txt.textContent = text;
         }
 
         // ============================================================
-        // FETCH MATCHES DYNAMICALLY FROM API
+        // FETCH MATCHES DYNAMICALLY FROM JSON FILE
         // ============================================================
 
         async function loadMatches() {
             const select = document.getElementById('match-select');
+            let loaded = false;
 
-            try {
-                // Try to fetch from backend API (mirrors real streamed.pk behavior)
-                const controller = new AbortController();
-                const timeout = setTimeout(() => controller.abort(), 5000);
+            // Try each data source in order
+            for (const source of DATA_SOURCES) {
+                try {
+                    const controller = new AbortController();
+                    const timeout = setTimeout(() => controller.abort(), 5000);
 
-                const res = await fetch(`${API_BASE}/api/matches/all`, { signal: controller.signal });
-                clearTimeout(timeout);
+                    const res = await fetch(source, { signal: controller.signal });
+                    clearTimeout(timeout);
 
-                if (!res.ok) throw new Error('API returned ' + res.status);
+                    if (!res.ok) continue;
 
-                const data = await res.json();
-                matches = data.matches || [];
+                    const data = await res.json();
+                    matches = data.matches || [];
 
-                if (matches.length === 0) {
-                    throw new Error('No matches returned from API');
+                    if (matches.length === 0) continue;
+
+                    loaded = true;
+                    setDataSource(true, `Data loaded from ${source} — ${matches.length} matches`);
+                    break;
+
+                } catch (err) {
+                    console.log(`Failed to load from ${source}:`, err.message);
+                    continue;
                 }
+            }
 
-                setApiStatus(true, `API Online — ${matches.length} matches loaded from localhost:8000`);
-
-                // Populate dropdown
-                select.innerHTML = '';
-                matches.forEach(match => {
-                    const option = document.createElement('option');
-                    option.value = match.id;
-                    option.textContent = `${match.home} vs ${match.away} — ${match.league}`;
-                    select.appendChild(option);
-                });
-                select.disabled = false;
-
-                // Load first match
-                changeMatch(matches[0].id);
-
-            } catch (err) {
-                console.error('Failed to load matches:', err);
-                setApiStatus(false, 'API Offline — Backend not running on localhost:8000');
-
-                // Show error with instructions
+            if (!loaded) {
+                setDataSource(false, 'No data source available — matches.json not found');
                 document.getElementById('error-container').innerHTML = `
                     <div class="error-box">
-                        <h3>❌ Backend API Not Running</h3>
-                        <p>The match list is fetched dynamically from <code>http://localhost:8000/api/matches/all</code> — no matches are hardcoded in this HTML file.</p>
-                        <p><strong>To fix this, start the backend services:</strong></p>
+                        <h3>❌ matches.json Not Found</h3>
+                        <p>This standalone page fetches match data dynamically from <code>./matches.json</code> — a JSON file in the same directory. No backend or server is needed.</p>
+                        <p><strong>To fix this:</strong></p>
                         <ol>
-                            <li>Open terminal in the <code>piracy_stack_replica</code> folder</li>
-                            <li>Run: <code>docker-compose up --build</code></li>
-                            <li>Wait 30-60 seconds for all services to start</li>
-                            <li>Refresh this page</li>
+                            <li>Make sure <code>matches.json</code> is in the same folder as <code>index.html</code></li>
+                            <li>Or host both files on GitHub Pages / Netlify / Vercel</li>
+                            <li>Or serve locally with any static file server:<br>
+                                <code>python -m http.server 8000</code> (Python)<br>
+                                <code>npx serve .</code> (Node.js)<br>
+                                <code>php -S localhost:8000</code> (PHP)</li>
                         </ol>
                         <p style="margin-top:15px; color:#888; font-size:12px;">
-                            Or start manually: <code>cd backend && uvicorn api:app --host 0.0.0.0 --port 8000 --reload</code>
+                            The JSON file acts as the "API" — update it, and the site reflects changes instantly without touching the HTML.
                         </p>
                     </div>
                 `;
-
-                // Keep dropdown disabled but show message
-                select.innerHTML = '<option value="">Start backend to load matches dynamically...</option>';
+                select.innerHTML = '<option value="">Place matches.json in same folder...</option>';
+                return;
             }
+
+            // Populate dropdown
+            select.innerHTML = '';
+            matches.forEach(match => {
+                const option = document.createElement('option');
+                option.value = match.id;
+                option.textContent = `${match.home} vs ${match.away} — ${match.league}`;
+                select.appendChild(option);
+            });
+            select.disabled = false;
+
+            // Check URL params for preselected match
+            const params = new URLSearchParams(window.location.search);
+            const preselect = params.get('match') || params.get('id');
+            if (preselect && matches.find(m => m.id === preselect)) {
+                select.value = preselect;
+            }
+
+            // Load first (or preselected) match
+            changeMatch(select.value);
         }
 
         // ============================================================
         // CHANGE MATCH
         // ============================================================
 
-        async function changeMatch(matchId) {
+        function changeMatch(matchId) {
             currentMatch = matchId;
             const match = matches.find(m => m.id === matchId);
             if (!match) return;
@@ -697,19 +726,17 @@ export function middleware(request: NextRequest) {
             video.src = '';
             overlay.classList.remove('hidden');
 
-            // Fetch stream metadata for this match
-            try {
-                const res = await fetch(`${API_BASE}/api/stream/admin/ppv-${matchId}`);
-                if (res.ok) {
-                    const streamData = await res.json();
-                    console.log('Stream metadata:', streamData);
-                }
-            } catch (e) {
-                // Stream fetch is optional for demo
-            }
+            // Rebuild stream buttons from match data
+            const container = document.getElementById('stream-buttons');
+            container.innerHTML = '';
 
-            // Enable stream buttons
-            document.querySelectorAll('.stream-btn').forEach(btn => btn.disabled = false);
+            Object.entries(match.streams || {}).forEach(([key, stream], index) => {
+                const btn = document.createElement('button');
+                btn.className = 'stream-btn' + (index === 0 ? ' active' : '');
+                btn.onclick = () => loadStream(key);
+                btn.innerHTML = `${stream.name} <span class="quality-badge">${stream.quality}</span>${stream.ppv ? '<span class="ppv-badge">PPV</span>' : ''}`;
+                container.appendChild(btn);
+            });
 
             // Load chat
             loadChat(match);
@@ -721,6 +748,9 @@ export function middleware(request: NextRequest) {
 
         function loadStream(source) {
             if (!currentMatch) return;
+            const match = matches.find(m => m.id === currentMatch);
+            const stream = match?.streams?.[source];
+            if (!stream) return;
 
             // Update UI
             document.querySelectorAll('.stream-btn').forEach(btn => btn.classList.remove('active'));
@@ -730,17 +760,14 @@ export function middleware(request: NextRequest) {
             // Destroy previous HLS
             if (hls) { hls.destroy(); hls = null; }
 
-            // Demo stream URL (test stream from Mux)
-            const demoUrl = 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8';
-
             // Load with HLS.js
             if (Hls.isSupported()) {
                 hls = new Hls({ maxBufferLength: 30, liveSyncDurationCount: 3, enableWorker: true });
-                hls.loadSource(demoUrl);
+                hls.loadSource(stream.url);
                 hls.attachMedia(video);
                 hls.on(Hls.Events.MANIFEST_PARSED, () => video.play());
             } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                video.src = demoUrl;
+                video.src = stream.url;
                 video.play();
             }
         }
@@ -753,33 +780,12 @@ export function middleware(request: NextRequest) {
             const chat = document.getElementById('chat');
             chat.innerHTML = '';
 
-            const messages = [
-                { user: 'adiiixexe', msg: `Stream for ${match.home} vs ${match.away} is up! 🔥`, time: '18:02' },
-                { user: 'fan1', msg: `Let's go ${match.home}!`, time: '18:03' },
-                { user: 'fan2', msg: `${match.away} will win this!`, time: '18:03' },
-                { user: 'mod', msg: 'Backup links in bio if main goes down', time: '18:04' },
-                { user: 'viewer', msg: 'admin source is clearest', time: '18:05' },
-            ];
-
-            messages.forEach(msg => {
+            (match.chat || []).forEach(msg => {
                 const div = document.createElement('div');
                 div.className = 'chat-msg';
                 div.innerHTML = `<span class="user">${msg.user}:</span> ${msg.msg} <span class="time">${msg.time}</span>`;
                 chat.appendChild(div);
             });
-        }
-
-        // ============================================================
-        // URL PARAMETER SUPPORT
-        // ============================================================
-
-        function initFromURL() {
-            const params = new URLSearchParams(window.location.search);
-            const matchId = params.get('match') || params.get('id');
-            if (matchId) {
-                // Will be selected after matches load
-                window.__preselectedMatch = matchId;
-            }
         }
 
         // ============================================================
@@ -803,7 +809,6 @@ export function middleware(request: NextRequest) {
         // ============================================================
 
         window.onload = () => {
-            initFromURL();
             loadMatches();
         };
     </script>

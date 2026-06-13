@@ -1,0 +1,379 @@
+{
+  "matches": [
+    {
+      "id": "brazil-vs-morocco-2391730",
+      "home": "Brazil",
+      "away": "Morocco",
+      "league": "FIFA World Cup",
+      "kickoff": "2026-06-14T18:00:00Z",
+      "status": "live",
+      "thumbnail": "https://p16-amd-va.tiktokcdn.com/obj/tos-alisg-avt-0068/match-thumb-bra-mar.jpg",
+      "streams": {
+        "admin": {
+          "name": "ADMIN",
+          "quality": "1080p",
+          "url": "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8",
+          "ppv": true
+        },
+        "delta": {
+          "name": "DELTA",
+          "quality": "720p",
+          "url": "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8"
+        },
+        "echo": {
+          "name": "ECHO",
+          "quality": "1080p",
+          "url": "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8"
+        },
+        "golf": {
+          "name": "GOLF",
+          "quality": "480p",
+          "url": "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8"
+        }
+      },
+      "chat": [
+        {
+          "user": "adiiixexe",
+          "msg": "Stream working great! \ud83d\udd25",
+          "time": "18:02"
+        },
+        {
+          "user": "brazilfan99",
+          "msg": "VAMOS BRAZIL \ud83c\udde7\ud83c\uddf7",
+          "time": "18:03"
+        },
+        {
+          "user": "moroocco",
+          "msg": "lets go atlas lions \ud83e\udd81",
+          "time": "18:03"
+        },
+        {
+          "user": "streamer_mod",
+          "msg": "Backup links in bio if main goes down",
+          "time": "18:04"
+        },
+        {
+          "user": "anon42",
+          "msg": "admin source is clearest",
+          "time": "18:05"
+        }
+      ]
+    },
+    {
+      "id": "argentina-vs-france-2391731",
+      "home": "Argentina",
+      "away": "France",
+      "league": "FIFA World Cup",
+      "kickoff": "2026-06-14T21:00:00Z",
+      "status": "upcoming",
+      "thumbnail": "https://p16-amd-va.tiktokcdn.com/obj/tos-alisg-avt-0068/match-thumb-arg-fra.jpg",
+      "streams": {
+        "admin": {
+          "name": "ADMIN",
+          "quality": "1080p",
+          "url": "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8",
+          "ppv": true
+        },
+        "delta": {
+          "name": "DELTA",
+          "quality": "720p",
+          "url": "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8"
+        },
+        "echo": {
+          "name": "ECHO",
+          "quality": "1080p",
+          "url": "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8"
+        },
+        "golf": {
+          "name": "GOLF",
+          "quality": "480p",
+          "url": "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8"
+        }
+      },
+      "chat": [
+        {
+          "user": "messi_fan",
+          "msg": "Vamos Argentina! \ud83c\udde6\ud83c\uddf7",
+          "time": "20:55"
+        },
+        {
+          "user": "les_bleus",
+          "msg": "Allez les Bleus! \ud83c\uddeb\ud83c\uddf7",
+          "time": "20:56"
+        },
+        {
+          "user": "mod",
+          "msg": "Match starts in 5 min",
+          "time": "20:57"
+        }
+      ]
+    },
+    {
+      "id": "germany-vs-spain-2391732",
+      "home": "Germany",
+      "away": "Spain",
+      "league": "FIFA World Cup",
+      "kickoff": "2026-06-15T15:00:00Z",
+      "status": "upcoming",
+      "thumbnail": "https://p16-amd-va.tiktokcdn.com/obj/tos-alisg-avt-0068/match-thumb-ger-esp.jpg",
+      "streams": {
+        "admin": {
+          "name": "ADMIN",
+          "quality": "1080p",
+          "url": "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8",
+          "ppv": true
+        },
+        "delta": {
+          "name": "DELTA",
+          "quality": "720p",
+          "url": "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8"
+        },
+        "echo": {
+          "name": "ECHO",
+          "quality": "1080p",
+          "url": "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8"
+        },
+        "golf": {
+          "name": "GOLF",
+          "quality": "480p",
+          "url": "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8"
+        }
+      },
+      "chat": [
+        {
+          "user": "bundesliga",
+          "msg": "Deutschland! \ud83c\udde9\ud83c\uddea",
+          "time": "14:50"
+        },
+        {
+          "user": "laliga",
+          "msg": "Vamos Espa\u00f1a! \ud83c\uddea\ud83c\uddf8",
+          "time": "14:51"
+        }
+      ]
+    },
+    {
+      "id": "england-vs-italy-2391733",
+      "home": "England",
+      "away": "Italy",
+      "league": "FIFA World Cup",
+      "kickoff": "2026-06-15T18:00:00Z",
+      "status": "upcoming",
+      "thumbnail": "https://p16-amd-va.tiktokcdn.com/obj/tos-alisg-avt-0068/match-thumb-eng-ita.jpg",
+      "streams": {
+        "admin": {
+          "name": "ADMIN",
+          "quality": "1080p",
+          "url": "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8",
+          "ppv": true
+        },
+        "delta": {
+          "name": "DELTA",
+          "quality": "720p",
+          "url": "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8"
+        },
+        "echo": {
+          "name": "ECHO",
+          "quality": "1080p",
+          "url": "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8"
+        },
+        "golf": {
+          "name": "GOLF",
+          "quality": "480p",
+          "url": "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8"
+        }
+      },
+      "chat": [
+        {
+          "user": "three_lions",
+          "msg": "It's coming home! \ud83c\udff4\udb40\udc67\udb40\udc62\udb40\udc65\udb40\udc6e\udb40\udc67\udb40\udc7f",
+          "time": "17:50"
+        },
+        {
+          "user": "azzurri",
+          "msg": "Forza Italia! \ud83c\uddee\ud83c\uddf9",
+          "time": "17:51"
+        }
+      ]
+    },
+    {
+      "id": "portugal-vs-netherlands-2391734",
+      "home": "Portugal",
+      "away": "Netherlands",
+      "league": "FIFA World Cup",
+      "kickoff": "2026-06-15T21:00:00Z",
+      "status": "upcoming",
+      "thumbnail": "https://p16-amd-va.tiktokcdn.com/obj/tos-alisg-avt-0068/match-thumb-por-ned.jpg",
+      "streams": {
+        "admin": {
+          "name": "ADMIN",
+          "quality": "1080p",
+          "url": "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8",
+          "ppv": true
+        },
+        "delta": {
+          "name": "DELTA",
+          "quality": "720p",
+          "url": "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8"
+        },
+        "echo": {
+          "name": "ECHO",
+          "quality": "1080p",
+          "url": "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8"
+        },
+        "golf": {
+          "name": "GOLF",
+          "quality": "480p",
+          "url": "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8"
+        }
+      },
+      "chat": [
+        {
+          "user": "cr7_fan",
+          "msg": "Siuuu! \ud83c\uddf5\ud83c\uddf9",
+          "time": "20:55"
+        },
+        {
+          "user": "oranje",
+          "msg": "Hup Holland! \ud83c\uddf3\ud83c\uddf1",
+          "time": "20:56"
+        }
+      ]
+    },
+    {
+      "id": "usa-vs-mexico-2391735",
+      "home": "USA",
+      "away": "Mexico",
+      "league": "FIFA World Cup",
+      "kickoff": "2026-06-16T18:00:00Z",
+      "status": "upcoming",
+      "thumbnail": "https://p16-amd-va.tiktokcdn.com/obj/tos-alisg-avt-0068/match-thumb-usa-mex.jpg",
+      "streams": {
+        "admin": {
+          "name": "ADMIN",
+          "quality": "1080p",
+          "url": "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8",
+          "ppv": true
+        },
+        "delta": {
+          "name": "DELTA",
+          "quality": "720p",
+          "url": "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8"
+        },
+        "echo": {
+          "name": "ECHO",
+          "quality": "1080p",
+          "url": "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8"
+        },
+        "golf": {
+          "name": "GOLF",
+          "quality": "480p",
+          "url": "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8"
+        }
+      },
+      "chat": [
+        {
+          "user": "usmnt",
+          "msg": "USA! USA! \ud83c\uddfa\ud83c\uddf8",
+          "time": "17:50"
+        },
+        {
+          "user": "el_tri",
+          "msg": "Vamos Mexico! \ud83c\uddf2\ud83c\uddfd",
+          "time": "17:51"
+        }
+      ]
+    },
+    {
+      "id": "japan-vs-korea-2391736",
+      "home": "Japan",
+      "away": "Korea",
+      "league": "FIFA World Cup",
+      "kickoff": "2026-06-16T21:00:00Z",
+      "status": "upcoming",
+      "thumbnail": "https://p16-amd-va.tiktokcdn.com/obj/tos-alisg-avt-0068/match-thumb-jpn-kor.jpg",
+      "streams": {
+        "admin": {
+          "name": "ADMIN",
+          "quality": "1080p",
+          "url": "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8",
+          "ppv": true
+        },
+        "delta": {
+          "name": "DELTA",
+          "quality": "720p",
+          "url": "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8"
+        },
+        "echo": {
+          "name": "ECHO",
+          "quality": "1080p",
+          "url": "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8"
+        },
+        "golf": {
+          "name": "GOLF",
+          "quality": "480p",
+          "url": "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8"
+        }
+      },
+      "chat": [
+        {
+          "user": "samurai",
+          "msg": "Nippon! \ud83c\uddef\ud83c\uddf5",
+          "time": "20:55"
+        },
+        {
+          "user": "taeguk",
+          "msg": "Daehan Minguk! \ud83c\uddf0\ud83c\uddf7",
+          "time": "20:56"
+        }
+      ]
+    },
+    {
+      "id": "senegal-vs-ghana-2391737",
+      "home": "Senegal",
+      "away": "Ghana",
+      "league": "FIFA World Cup",
+      "kickoff": "2026-06-17T15:00:00Z",
+      "status": "upcoming",
+      "thumbnail": "https://p16-amd-va.tiktokcdn.com/obj/tos-alisg-avt-0068/match-thumb-sen-gha.jpg",
+      "streams": {
+        "admin": {
+          "name": "ADMIN",
+          "quality": "1080p",
+          "url": "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8",
+          "ppv": true
+        },
+        "delta": {
+          "name": "DELTA",
+          "quality": "720p",
+          "url": "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8"
+        },
+        "echo": {
+          "name": "ECHO",
+          "quality": "1080p",
+          "url": "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8"
+        },
+        "golf": {
+          "name": "GOLF",
+          "quality": "480p",
+          "url": "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8"
+        }
+      },
+      "chat": [
+        {
+          "user": "lions",
+          "msg": "Les Lions! \ud83c\uddf8\ud83c\uddf3",
+          "time": "14:50"
+        },
+        {
+          "user": "black_stars",
+          "msg": "Go Black Stars! \ud83c\uddec\ud83c\udded",
+          "time": "14:51"
+        }
+      ]
+    }
+  ],
+  "count": 8,
+  "updated_at": "2026-06-14T04:00:00Z",
+  "source": "matches.json"
+}
