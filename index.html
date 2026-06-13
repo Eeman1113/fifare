@@ -3,229 +3,809 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Live Sports — Brazil vs Morocco</title>
-    <!-- HLS.js from CDN — pure client-side, no backend needed -->
+    <title>FIFA Piracy Stack — Security Research Replica</title>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <style>
+        :root {
+            --bg: #0a0a0a;
+            --bg2: #111;
+            --bg3: #1a1a1a;
+            --border: #222;
+            --text: #fff;
+            --text2: #888;
+            --text3: #666;
+            --accent: #e74c3c;
+            --accent2: #f39c12;
+            --green: #2ecc71;
+            --code: #1a1a1a;
+        }
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background: #0a0a0a; color: #fff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
-        .header { text-align: center; padding: 25px 20px; border-bottom: 1px solid #222; }
-        .header h1 { font-size: 2rem; font-weight: 700; }
-        .vs { color: #e74c3c; margin: 0 12px; }
-        .meta { margin-top: 8px; color: #888; font-size: 0.9rem; }
-        .live { color: #e74c3c; font-weight: 600; animation: pulse 2s infinite; }
+        body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; }
+
+        .topbar { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+        .topbar h1 { font-size: 1.1rem; font-weight: 600; }
+        .topbar .badge { background: var(--accent); color: #fff; font-size: 0.65rem; padding: 2px 8px; border-radius: 3px; margin-left: 8px; text-transform: uppercase; letter-spacing: 1px; }
+        .topbar nav { display: flex; gap: 4px; }
+        .topbar nav button { background: transparent; border: 1px solid var(--border); color: var(--text2); padding: 6px 14px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; transition: all 0.2s; }
+        .topbar nav button:hover, .topbar nav button.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+        .match-bar { background: var(--bg3); padding: 15px 20px; display: flex; align-items: center; gap: 15px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+        .match-bar label { color: var(--text2); font-size: 0.85rem; }
+        .match-bar select { background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 8px 14px; border-radius: 4px; font-size: 0.9rem; cursor: pointer; min-width: 300px; }
+        .match-bar .match-info { color: var(--text3); font-size: 0.8rem; margin-left: auto; }
+        .match-bar .live-dot { color: var(--accent); animation: pulse 2s infinite; }
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
-        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
-        .video-area { display: grid; grid-template-columns: 1fr 320px; gap: 20px; }
-        .player-wrapper { background: #000; border-radius: 10px; overflow: hidden; aspect-ratio: 16/9; position: relative; }
+
+        .api-status { padding: 8px 20px; font-size: 0.8rem; display: flex; align-items: center; gap: 8px; }
+        .api-status.online { background: rgba(46, 204, 113, 0.1); color: var(--green); }
+        .api-status.offline { background: rgba(231, 76, 60, 0.1); color: var(--accent); }
+        .api-status .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+        .api-status.online .dot { background: var(--green); }
+        .api-status.offline .dot { background: var(--accent); }
+
+        .main { display: grid; grid-template-columns: 1fr 340px; gap: 0; min-height: calc(100vh - 160px); }
+        .main.fullwidth { grid-template-columns: 1fr; }
+
+        .video-section { padding: 20px; }
+        .player-wrapper { background: #000; border-radius: 10px; overflow: hidden; aspect-ratio: 16/9; position: relative; border: 1px solid var(--border); }
         #video { width: 100%; height: 100%; object-fit: contain; }
-        .player-overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: #000; z-index: 10; }
+        .player-overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: #000; z-index: 10; flex-direction: column; }
         .player-overlay.hidden { display: none; }
-        .streams { margin-top: 18px; }
-        .streams h3 { color: #666; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
-        .stream-btn { background: #151515; border: 1px solid #2a2a2a; color: #fff; padding: 10px 18px; margin: 0 6px 6px 0; border-radius: 6px; cursor: pointer; font-size: 0.85rem; transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px; }
-        .stream-btn:hover { border-color: #e74c3c; background: #1a1a1a; }
-        .stream-btn.active { background: #e74c3c; border-color: #e74c3c; color: #fff; }
-        .quality-badge { background: #333; color: #aaa; font-size: 0.7rem; padding: 2px 6px; border-radius: 3px; }
+        .player-overlay h2 { font-size: 1.3rem; margin-bottom: 8px; }
+        .player-overlay p { color: var(--text3); font-size: 0.85rem; }
+
+        .streams { margin-top: 16px; }
+        .streams h3 { color: var(--text3); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+        .stream-btn { background: var(--bg2); border: 1px solid var(--border); color: var(--text); padding: 10px 16px; margin: 0 6px 6px 0; border-radius: 6px; cursor: pointer; font-size: 0.85rem; transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px; }
+        .stream-btn:hover { border-color: var(--accent); background: var(--bg3); }
+        .stream-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+        .stream-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .quality-badge { background: var(--bg3); color: var(--text2); font-size: 0.7rem; padding: 2px 6px; border-radius: 3px; }
         .stream-btn.active .quality-badge { background: rgba(255,255,255,0.2); color: #fff; }
-        .chat-panel { background: #111; border-radius: 10px; overflow: hidden; }
-        .chat-header { padding: 14px 16px; background: #1a1a1a; border-bottom: 1px solid #222; display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; }
-        .chat-body { height: 400px; background: #0a0a0a; padding: 12px; overflow-y: auto; }
-        .chat-msg { color: #666; font-size: 0.8rem; margin-bottom: 8px; padding: 6px 10px; background: #151515; border-radius: 4px; }
-        .chat-msg .user { color: #e74c3c; font-weight: 600; }
-        .info-box { background: #111; border: 1px solid #222; border-radius: 8px; padding: 16px; margin-top: 20px; font-size: 0.8rem; color: #666; }
-        .info-box code { background: #1a1a1a; padding: 2px 6px; border-radius: 3px; font-family: 'Courier New', monospace; color: #aaa; }
-        @media (max-width: 900px) { .video-area { grid-template-columns: 1fr; } }
+        .ppv-badge { background: var(--accent2); color: #000; font-size: 0.65rem; padding: 1px 5px; border-radius: 2px; font-weight: 700; margin-left: 4px; }
+
+        .sidebar { background: var(--bg2); border-left: 1px solid var(--border); display: flex; flex-direction: column; }
+        .sidebar-header { padding: 14px 16px; background: var(--bg3); border-bottom: 1px solid var(--border); font-size: 0.9rem; font-weight: 600; display: flex; justify-content: space-between; align-items: center; }
+        .chat-body { flex: 1; padding: 12px; overflow-y: auto; }
+        .chat-msg { color: var(--text3); font-size: 0.8rem; margin-bottom: 8px; padding: 8px 10px; background: var(--bg); border-radius: 4px; border-left: 2px solid var(--accent); }
+        .chat-msg .user { color: var(--accent); font-weight: 600; }
+        .chat-msg .time { color: #444; font-size: 0.7rem; margin-left: 6px; }
+
+        .info-box { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-top: 20px; font-size: 0.8rem; color: var(--text3); }
+        .info-box strong { color: var(--text); }
+        .info-box code { background: var(--code); padding: 2px 6px; border-radius: 3px; font-family: 'Courier New', monospace; color: #aaa; font-size: 0.85rem; }
+
+        .error-box { background: rgba(231, 76, 60, 0.1); border: 1px solid var(--accent); border-radius: 8px; padding: 20px; margin: 15px 0; }
+        .error-box h3 { color: var(--accent); margin-top: 0; }
+        .error-box ol { color: var(--text2); margin: 10px 0 0 20px; line-height: 1.8; }
+        .error-box code { background: var(--code); padding: 2px 6px; border-radius: 3px; font-family: monospace; }
+
+        .reports-section { display: none; padding: 30px 20px; max-width: 900px; margin: 0 auto; }
+        .reports-section.active { display: block; }
+        .reports-section h2 { font-size: 1.5rem; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid var(--accent); }
+        .reports-section h3 { font-size: 1.1rem; color: var(--accent); margin: 25px 0 12px; }
+        .reports-section h4 { font-size: 0.95rem; color: var(--text2); margin: 18px 0 8px; }
+        .reports-section p { color: var(--text2); margin-bottom: 12px; font-size: 0.9rem; }
+        .reports-section ul, .reports-section ol { color: var(--text2); margin: 10px 0 15px 20px; font-size: 0.9rem; }
+        .reports-section li { margin-bottom: 6px; }
+        .reports-section code { background: var(--code); padding: 2px 6px; border-radius: 3px; font-family: 'Courier New', monospace; color: #aaa; font-size: 0.85rem; }
+        .reports-section pre { background: var(--code); padding: 15px; border-radius: 6px; overflow-x: auto; margin: 12px 0; border: 1px solid var(--border); }
+        .reports-section pre code { background: none; padding: 0; }
+        .reports-section table { width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 0.85rem; }
+        .reports-section th, .reports-section td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); }
+        .reports-section th { background: var(--bg3); color: var(--text); font-weight: 600; }
+        .reports-section td { color: var(--text2); }
+        .reports-section .highlight-box { background: var(--bg3); border-left: 3px solid var(--accent); padding: 15px; margin: 15px 0; border-radius: 0 6px 6px 0; }
+        .reports-section .checklist { list-style: none; margin-left: 0; }
+        .reports-section .checklist li { padding-left: 25px; position: relative; }
+        .reports-section .checklist li::before { content: "☐"; position: absolute; left: 0; color: var(--accent); }
+        .reports-section .stars { color: var(--accent2); letter-spacing: 2px; }
+
+        .report-tabs { display: flex; gap: 4px; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+        .report-tabs button { background: transparent; border: 1px solid var(--border); color: var(--text2); padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; }
+        .report-tabs button:hover, .report-tabs button.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+        .report-panel { display: none; }
+        .report-panel.active { display: block; }
+
+        .loading { color: var(--text3); font-size: 0.85rem; padding: 10px; }
+        .loading::after { content: "..."; animation: dots 1.5s infinite; }
+        @keyframes dots { 0%,20%{content: "."} 40%{content: ".."} 60%,100%{content: "..."} }
+
+        @media (max-width: 900px) {
+            .main { grid-template-columns: 1fr; }
+            .sidebar { display: none; }
+            .match-bar { flex-wrap: wrap; }
+        }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>Brazil <span class="vs">vs</span> Morocco</h1>
-        <div class="meta">FIFA World Cup 2026 <span class="live">● LIVE</span></div>
+    <div class="topbar">
+        <div>
+            <h1>⚡ Piracy Stack Replica <span class="badge">Security Research</span></h1>
+        </div>
+        <nav>
+            <button class="active" onclick="showTab('demo')" id="btn-demo">Demo</button>
+            <button onclick="showTab('reports')" id="btn-reports">Reports</button>
+        </nav>
     </div>
 
-    <div class="container">
-        <div class="video-area">
-            <div>
-                <div class="player-wrapper">
-                    <div class="player-overlay" id="overlay">
-                        <div style="text-align:center;">
-                            <div style="font-size:1.2rem; margin-bottom:8px;">⚡ Select a mirror to start</div>
-                            <div style="color:#555; font-size:0.85rem;">No backend required — pure client-side</div>
-                        </div>
-                    </div>
-                    <video id="video" controls autoplay muted></video>
-                </div>
+    <div class="match-bar">
+        <label for="match-select">📺 Match:</label>
+        <select id="match-select" onchange="changeMatch(this.value)" disabled>
+            <option value="">Loading matches from API...</option>
+        </select>
+        <div class="match-info">
+            <span class="live-dot">●</span> <span id="match-status">Loading...</span>
+        </div>
+    </div>
 
-                <div class="streams">
-                    <h3>Mirror Sources</h3>
-                    <button class="stream-btn active" onclick="loadStream('admin')">
-                        ADMIN <span class="quality-badge">1080p</span>
-                    </button>
-                    <button class="stream-btn" onclick="loadStream('delta')">
-                        DELTA <span class="quality-badge">720p</span>
-                    </button>
-                    <button class="stream-btn" onclick="loadStream('echo')">
-                        ECHO <span class="quality-badge">1080p</span>
-                    </button>
-                    <button class="stream-btn" onclick="loadStream('golf')">
-                        GOLF <span class="quality-badge">480p</span>
-                    </button>
-                </div>
+    <div class="api-status offline" id="api-status">
+        <span class="dot"></span>
+        <span id="api-status-text">Checking API connection...</span>
+    </div>
 
-                <div class="info-box">
-                    <strong>🔍 How this works (no backend needed):</strong><br><br>
-                    1. This page is <strong>static HTML</strong> hosted on GitHub Pages (free CDN)<br>
-                    2. <strong>HLS.js</strong> (loaded from CDN) plays video directly in browser<br>
-                    3. Stream URLs are fetched from <strong>external APIs</strong> (streamed.pk style) or hardcoded<br>
-                    4. The "backend" is just <strong>JSON data</strong> — could be another GitHub repo, a gist, or an external API<br>
-                    5. <strong>Zero server costs</strong>, <strong>zero maintenance</strong>, <strong>instant global deploy</strong><br><br>
-                    <strong>Architecture:</strong> GitHub Pages (frontend shell) → HLS.js (browser) → External CDN (video) → External API (stream metadata)
+    <div id="tab-demo" class="main">
+        <div class="video-section">
+            <div class="player-wrapper">
+                <div class="player-overlay" id="overlay">
+                    <h2 id="overlay-title">Select a Match</h2>
+                    <p>Choose a match from the dropdown above</p>
+                </div>
+                <video id="video" controls autoplay muted></video>
+            </div>
+
+            <div class="streams">
+                <h3>Mirror Sources</h3>
+                <div id="stream-buttons">
+                    <button class="stream-btn" disabled>ADMIN <span class="quality-badge">1080p</span><span class="ppv-badge">PPV</span></button>
+                    <button class="stream-btn" disabled>DELTA <span class="quality-badge">720p</span></button>
+                    <button class="stream-btn" disabled>ECHO <span class="quality-badge">1080p</span></button>
+                    <button class="stream-btn" disabled>GOLF <span class="quality-badge">480p</span></button>
                 </div>
             </div>
 
-            <div class="chat-panel">
-                <div class="chat-header">
-                    <span>Live Chat</span>
-                    <span style="color:#666; font-size:0.75rem;">1,247 online</span>
-                </div>
-                <div class="chat-body" id="chat">
-                    <div class="chat-msg"><span class="user">adiiixexe:</span> Stream working great! 🔥</div>
-                    <div class="chat-msg"><span class="user">brazilfan99:</span> VAMOS BRAZIL 🇧🇷</div>
-                    <div class="chat-msg"><span class="user">moroocco:</span> lets go atlas lions 🦁</div>
-                    <div class="chat-msg"><span class="user">streamer_mod:</span> Backup links in bio if main goes down</div>
-                    <div class="chat-msg"><span class="user">anon42:</span> admin source is clearest</div>
-                </div>
+            <div id="error-container"></div>
+
+            <div class="info-box">
+                <strong>🔍 Architecture:</strong> This static page fetches match data dynamically from <code>http://localhost:8000/api/matches/live</code> and <code>http://localhost:8000/api/matches/all</code> — just like the real piracy site calls <code>streamed.pk</code>. No match list is hardcoded in the HTML. The backend API drives everything.
             </div>
+        </div>
+
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <span>Live Chat</span>
+                <span style="color: var(--text3); font-size: 0.75rem;">—</span>
+            </div>
+            <div class="chat-body" id="chat">
+                <div class="chat-msg" style="color:#444;">Select a match to load chat...</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="tab-reports" class="reports-section">
+        <div class="report-tabs">
+            <button class="active" onclick="showReport('countermeasures')" id="btn-countermeasures">Countermeasures</button>
+            <button onclick="showReport('vercel')" id="btn-vercel">Vercel Hosting</button>
+            <button onclick="showReport('github')" id="btn-github">GitHub Pages</button>
+            <button onclick="showReport('quickref')" id="btn-quickref">Quick Reference</button>
+        </div>
+
+        <div id="report-countermeasures" class="report-panel active">
+            <h2>🛡️ FIFA Anti-Piracy Countermeasures Report</h2>
+            <p><strong>Prepared for FIFA Security Operations</strong> | <strong>Date: 2026-06-14</strong></p>
+
+            <div class="highlight-box">
+                <strong>Executive Summary:</strong> The piracy infrastructure is not sophisticated. It is a low-cost, modular, disposable stack. Total build time: under 4 hours. Total monthly operating cost: approximately $50–$150 USD. However, multiple high-impact intervention points exist where FIFA can dismantle these operations with coordinated legal, technical, and commercial pressure.
+            </div>
+
+            <h3>1. Infrastructure Weaknesses Exploitable by Rights Holders</h3>
+
+            <h4>1.1 The Single Point of Failure: Aggregation API (streamed.pk)</h4>
+            <p>The <code>streamed.pk</code> API is the <strong>hub</strong> of the entire operation. Without it, the frontend cannot discover streams, and the embed broker cannot resolve CDN URLs.</p>
+            <ul>
+                <li><strong>Takedown Priority: CRITICAL.</strong> Issue DMCA/copyright notices to streamed.pk's hosting provider and registrar immediately.</li>
+                <li><strong>Monitoring:</strong> Even after takedown, monitor for re-emergence under new TLDs (.xyz, .top, .click, .live).</li>
+                <li><strong>Automated Detection:</strong> Deploy crawlers to search for API endpoints across the web. The JSON response structure is consistent and fingerprintable.</li>
+            </ul>
+
+            <h4>1.2 Disposable Frontend (dpdns.org)</h4>
+            <p><code>livsport.dpdns.org</code> uses a <strong>free dynamic DNS service</strong>. Classic disposable infrastructure — operator can re-point the subdomain to a new IP within minutes of a takedown.</p>
+            <ul>
+                <li><strong>Dynamic DNS Blacklisting:</strong> Work with dynamic DNS providers to establish rapid-abuse reporting pipelines.</li>
+                <li><strong>DGA Monitoring:</strong> Monitor subdomain registrations for patterns (livsport, streams, watchlive + random numbers).</li>
+                <li><strong>Search Engine De-indexing:</strong> Submit de-indexing requests to Google, Bing, DuckDuckGo for all known subdomains.</li>
+            </ul>
+
+            <h4>1.3 Tokenized CDN (lb8.strmd.st)</h4>
+            <p>The CDN uses time-limited tokens to prevent hot-linking. However, the tokens are generated by the embed broker, which means the CDN edge must validate them against a shared secret.</p>
+            <ul>
+                <li><strong>Token Reverse-Engineering:</strong> If the algorithm is weak (MD5/SHA256 of predictable parameters), it can be reverse-engineered for evidence gathering.</li>
+                <li><strong>CDN Provider Pressure:</strong> Identify hosting provider via ASN/WHOIS. Issue takedown notices.</li>
+                <li><strong>IP Blocking:</strong> Court-ordered IP blocking (Italy's Piracy Shield: 30-minute mandate).</li>
+            </ul>
+
+            <h4>1.4 Twitch Re-stream (adiiixexe)</h4>
+            <p>Twitch channel <code>adiiixexe</code> (ID: 1033682916) is used as a backup stream and chat source. Twitch's Terms of Service explicitly prohibit unauthorized re-streaming.</p>
+            <ul>
+                <li><strong>Immediate Reporting:</strong> File DMCA takedown request with Twitch via copyright portal.</li>
+                <li><strong>Account Termination:</strong> Twitch has a three-strike policy for copyright violations.</li>
+                <li><strong>Chat Monitoring:</strong> The chat channel can be monitored for links to new piracy domains.</li>
+            </ul>
+
+            <h3>2. Recommended Legal & Administrative Actions</h3>
+
+            <h4>2.1 Dynamic Injunctions (India Model)</h4>
+            <p>The Delhi High Court recently granted dynamic injunctions to Zee for FIFA World Cup 2026, allowing automatic extension of blocking orders to new domains as they emerge. FIFA should pursue similar orders in:</p>
+            <table>
+                <tr><th>Country</th><th>Tool</th><th>Speed</th></tr>
+                <tr><td>Italy</td><td>AGCOM Piracy Shield</td><td>30 minutes</td></tr>
+                <tr><td>France</td><td>ARCOM + VPN blocking</td><td>24-48 hours</td></tr>
+                <tr><td>UK</td><td>High Court blocking orders</td><td>1-2 weeks</td></tr>
+                <tr><td>India</td><td>Dynamic injunctions (Delhi HC)</td><td>24-48 hours</td></tr>
+                <tr><td>Brazil</td><td>Local broadcast rights enforcement</td><td>1-2 weeks</td></tr>
+            </table>
+
+            <h4>2.2 ISP-Level Blocking</h4>
+            <p>Court-ordered ISP blocking is the <strong>most effective technical countermeasure</strong> for live sports. Key requirements:</p>
+            <ul>
+                <li><strong>Speed:</strong> Blocking must be implemented within 30 minutes of notification.</li>
+                <li><strong>Scope:</strong> Block domains, IPs, and alternative DNS providers used for circumvention.</li>
+                <li><strong>Duration:</strong> Cover the entire tournament period (June 11 – July 19, 2026).</li>
+                <li><strong>VPN Targeting:</strong> Extend blocking orders to VPN providers that facilitate circumvention.</li>
+            </ul>
+
+            <h3>3. Technical Countermeasures for Broadcast Partners</h3>
+
+            <h4>3.1 Forensic Watermarking</h4>
+            <p>Every legitimate stream should embed an invisible, subscriber-specific watermark. If a stream is pirated, the watermark identifies the specific subscriber account, device, and time of extraction.</p>
+
+            <h4>3.2 Session-Based Watermarking</h4>
+            <p>For live streaming, session-based watermarking builds a unique playlist per subscriber. The HLS segments are slightly different for each viewer, making the source traceable even after re-encoding.</p>
+
+            <h4>3.3 DRM Hardening</h4>
+            <ul>
+                <li><strong>Multi-DRM:</strong> Use Widevine, FairPlay, PlayReady simultaneously.</li>
+                <li><strong>Key Rotation:</strong> Rotate DRM keys every 5–10 minutes during live events.</li>
+                <li><strong>HDCP Enforcement:</strong> Require HDCP 2.2+ for 4K streams to prevent HDMI capture.</li>
+            </ul>
+
+            <h3>4. The Attrition Strategy</h3>
+            <div class="highlight-box">
+                <strong>Pirate rebuild time:</strong> ~6 hours<br>
+                <strong>Your takedown cycle:</strong> Every 6 hours<br>
+                <strong>Duration:</strong> 30 days (tournament length)<br>
+                <strong>Result:</strong> Operator gives up or goes bankrupt<br><br>
+                <strong>This is a war of attrition. FIFA has the deeper pockets. Act accordingly.</strong>
+            </div>
+
+            <h3>5. Immediate Action Checklist</h3>
+            <ul class="checklist">
+                <li>Preserve original HAR capture and hash as evidence</li>
+                <li>Capture HLS manifests and video segments with timestamps</li>
+                <li>Record WHOIS, DNS, and ASN data for all domains</li>
+                <li>Issue takedown notices to strmd.st and embed.st hosting providers</li>
+                <li>File complaint with dpdns.org for livsport subdomain</li>
+                <li>Submit report to Twitch for channel adiiixexe</li>
+                <li>Add all domains to continuous monitoring watchlist</li>
+                <li>Monitor streamed.pk API as hub for broader disruption</li>
+            </ul>
+        </div>
+
+        <div id="report-vercel" class="report-panel">
+            <h2>☁️ Vercel Hosting Analysis</h2>
+            <p><strong>How Pirates Use Vercel's Free Tier</strong> | <strong>Date: 2026-06-14</strong></p>
+
+            <div class="highlight-box">
+                <strong>The Vercel Advantage for Pirates:</strong> Free Hobby tier ($0/month), global edge CDN, Next.js native support, instant deploys, custom domains, serverless functions, no proactive monitoring. Total rebuild time after takedown: ~9 minutes.
+            </div>
+
+            <h3>Exact Architecture on Vercel</h3>
+
+            <h4>The Repo Structure</h4>
+            <pre><code>github.com/someuser/sports-dashboard (private repo)
+├── app/
+│   ├── match/[id]/page.tsx      ← Match page (Next.js App Router)
+│   ├── api/proxy/route.ts       ← Serverless proxy (hides real API origin)
+│   ├── api/sports/route.ts      ← Optional: mirrors streamed.pk API
+│   └── layout.tsx               ← Root layout with telemetry injection
+├── components/
+│   ├── VideoPlayer.tsx          ← HLS.js wrapper
+│   ├── StreamSelector.tsx       ← Mirror source selector
+│   └── ChatEmbed.tsx            ← Twitch iframe embed
+├── middleware.ts                ← Bot blocking, header obfuscation
+├── vercel.json                  ← Edge config, headers, rewrites
+└── .env.local                   ← API_BASE, EMBED_BASE, CDN_BASE</code></pre>
+
+            <h4>The Clever Part: Serverless Proxy</h4>
+            <p>Smart operators don't call <code>streamed.pk</code> directly from the browser. They proxy through a Vercel function to hide the real API origin from dev tools:</p>
+            <pre><code>// app/api/proxy/route.ts
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const endpoint = searchParams.get('endpoint');
+
+  // Proxy to real API — hides origin from client
+  const apiRes = await fetch(`https://streamed.pk${endpoint}`, {
+    headers: {
+      'Origin': 'https://embed.st',
+      'Referer': 'https://embed.st/',
+    },
+  });
+
+  return Response.json(await apiRes.json());
+}</code></pre>
+
+            <h4>The Advanced Part: Edge Middleware</h4>
+            <pre><code>// middleware.ts
+export function middleware(request: NextRequest) {
+  // Block known bot user agents
+  const ua = request.headers.get('user-agent') || '';
+  const blockedUAs = ['bot', 'crawler', 'scrapy', 'selenium'];
+  if (blockedUAs.some(b => ua.toLowerCase().includes(b))) {
+    return NextResponse.redirect('https://google.com');
+  }
+
+  // Add fake security headers to look legitimate
+  const response = NextResponse.next();
+  response.headers.set('X-Frame-Options', 'SAMEORIGIN');
+  return response;
+}</code></pre>
+
+            <h3>Vercel-Specific Takedown Procedures</h3>
+
+            <h4>Method 1: Vercel Abuse Form (Fastest)</h4>
+            <ul>
+                <li><strong>URL:</strong> <code>vercel.com/abuse</code></li>
+                <li><strong>Process:</strong> Review → disable <strong>entire deployment</strong> (cannot remove specific pages)</li>
+                <li><strong>2024 Stats:</strong> 1,015 DMCA reports actioned; 1,001 visibility restrictions, 6 account restrictions</li>
+                <li><strong>Catch:</strong> Vercel warns: "if a deployment is taken offline, the owner may spin up a new deployment"</li>
+            </ul>
+
+            <h4>Method 2: GitHub Takedown (Upstream Kill)</h4>
+            <p>Since Vercel deploys from GitHub, <strong>killing the repo kills the deployment pipeline</strong>:</p>
+            <ul>
+                <li>File DMCA with GitHub → repo disabled in 24h</li>
+                <li>Vercel has no source to build from</li>
+                <li>Operator must create new GitHub account + new repo = friction</li>
+            </ul>
+
+            <h4>Method 3: Custom Domain Disruption</h4>
+            <p>If using <code>dpdns.org</code> → Vercel CNAME:</p>
+            <ul>
+                <li>Report dpdns.org abuse → CNAME removed</li>
+                <li>Site still lives at <code>.vercel.app</code> but loses branded domain</li>
+                <li>Monitor for new dynamic DNS subdomains pointing to same Vercel project</li>
+            </ul>
+
+            <h3>The Whack-a-Mole Problem</h3>
+            <table>
+                <tr><th>Step</th><th>Time</th></tr>
+                <tr><td>New throwaway GitHub account</td><td>2 min</td></tr>
+                <tr><td>Push repo to new account</td><td>3 min</td></tr>
+                <tr><td>New Vercel project</td><td>2 min</td></tr>
+                <tr><td>Update dpdns CNAME</td><td>1 min</td></tr>
+                <tr><td>Share new URL</td><td>1 min</td></tr>
+                <tr><td><strong>Total rebuild</strong></td><td><strong>~9 minutes</strong></td></tr>
+            </table>
+
+            <div class="highlight-box">
+                <strong>This is why Vercel takedown alone is insufficient.</strong> You need simultaneous strikes on: Vercel deployment (kills storefront), GitHub repo (kills pipeline), dpdns.org domain (kills branded URL), CDN strmd.st (kills video), Twitch channel (kills backup). Kill all five at once, and the operation is dead for 6-12 hours — long enough for the match to end.
+            </div>
+        </div>
+
+        <div id="report-github" class="report-panel">
+            <h2>📄 GitHub Pages: Zero-Backend Piracy Architecture</h2>
+            <p><strong>How Pirates Host Without Any Backend</strong> | <strong>Date: 2026-06-14</strong></p>
+
+            <div class="highlight-box">
+                <strong>The Zero-Backend Revolution:</strong> The most dangerous piracy sites today don't have backends. They are pure static HTML/CSS/JS hosted on free platforms. The "backend" is just external APIs called from the browser, hardcoded JSON, or client-side HLS.js playing video from external CDNs.
+            </div>
+
+            <h3>Why This is Devastating for Anti-Piracy</h3>
+            <ul>
+                <li><strong>No server to take down</strong> — just static files on a CDN</li>
+                <li><strong>No hosting costs</strong> — completely free</li>
+                <li><strong>No maintenance</strong> — set it and forget it</li>
+                <li><strong>Instant global deploy</strong> — push to GitHub, live in 30 seconds</li>
+                <li><strong>Infinite redundancy</strong> — fork the repo, new site in 1 minute</li>
+                <li><strong>Harder to DMCA</strong> — GitHub gives 24h notice, user can modify files</li>
+            </ul>
+
+            <h3>Exact Architecture on GitHub Pages</h3>
+            <pre><code>github.com/someuser/sports-live (public or private repo)
+├── index.html              ← Single file — the entire "app"
+├── .github/workflows/
+│   └── deploy.yml            ← Auto-deploy to GitHub Pages on push
+├── CNAME                    ← Custom domain (optional)
+└── README.md                ← Fake description to look legitimate</code></pre>
+
+            <h3>How It Works (Step by Step)</h3>
+            <ol>
+                <li><strong>GitHub Pages serves index.html</strong> — free, fast, global CDN</li>
+                <li><strong>Browser loads HLS.js from CDN</strong> — <code>cdn.jsdelivr.net/npm/hls.js@latest</code></li>
+                <li><strong>JavaScript fetches stream data</strong> — hardcoded in JS, or from external API, or from JSON file on another repo/gist</li>
+                <li><strong>HLS.js plays the video</strong> — directly from external CDN (<code>lb8.strmd.st</code>)</li>
+                <li><strong>Telemetry beacons</strong> — sent to external endpoints (<code>ann.cdn-lab.shop</code>)</li>
+                <li><strong>Chat</strong> — embedded Twitch iframe or WebSocket to external server</li>
+            </ol>
+
+            <h3>GitHub's DMCA Process (The Slow Kill)</h3>
+            <ol>
+                <li>GitHub receives DMCA notice → posts it publicly</li>
+                <li>If <strong>entire repo</strong> is infringing → disable immediately</li>
+                <li>If <strong>partial infringement</strong> → contact user, give ~1 business day to modify</li>
+                <li>User modifies files → GitHub verifies, no takedown</li>
+                <li>User does nothing → GitHub disables the repo</li>
+                <li>Counter-notice possible → 10-day window</li>
+            </ol>
+            <p><strong>This process takes 24-48 hours minimum.</strong> A live sports match is 90 minutes. By the time GitHub acts, the match is over and the pirate has moved to a new repo.</p>
+
+            <h3>Fork Network Problem</h3>
+            <p>GitHub does <strong>not</strong> automatically disable forks when disabling a parent repository. The copyright holder must explicitly identify each fork as infringing. If a repo has 100+ forks:</p>
+            <ul>
+                <li>Create repo → enable GitHub Pages</li>
+                <li>50 people fork it within hours</li>
+                <li>Main repo gets DMCA'd → 50 forks still live</li>
+                <li>Each fork has its own GitHub Pages URL</li>
+                <li>Whack-a-mole becomes impossible</li>
+            </ul>
+
+            <h3>Countermeasures for GitHub Pages-Hosted Piracy</h3>
+
+            <h4>Strategy 1: Kill the Video CDN (Highest Impact)</h4>
+            <p>The frontend is useless without working video streams. Focus on <code>strmd.st</code> and similar CDN domains. Issue takedowns to CDN hosting providers. Court-ordered IP blocking (Italy's Piracy Shield: 30 min).</p>
+
+            <h4>Strategy 2: Disrupt Stream Discovery</h4>
+            <p>If the frontend relies on an external API (<code>streamed.pk</code> style), takedown the API — this is the <strong>brain</strong> of the operation. Without the API, the frontend can't find streams.</p>
+
+            <h4>Strategy 3: GitHub-Specific Takedown</h4>
+            <ul>
+                <li>File DMCA: <code>github.com/contact/dmca</code> or <code>copyright@github.com</code></li>
+                <li>Include specific URLs, evidence, statement under penalty of perjury</li>
+                <li>GitHub will only disable if the <strong>entire contents</strong> infringe</li>
+                <li>For piracy sites (single HTML file), this qualifies for immediate disable</li>
+            </ul>
+
+            <h4>Strategy 4: Monitor Fork Networks</h4>
+            <p>Use GitHub API to enumerate all forks: <code>GET /repos/{owner}/{repo}/forks</code>. Include all forks in the takedown notice. State: "All forks are infringing to the same extent as the parent."</p>
+
+            <h4>Strategy 5: Report Abuse (Non-DMCA Route)</h4>
+            <p>GitHub's Terms of Service prohibit illegal content. File abuse report at <code>github.com/contact/report-abuse</code>. Select: "Illegal content" → "Copyright infringement". This is faster than DMCA for clear-cut cases.</p>
+
+            <div class="highlight-box">
+                <strong>Key Insight for FIFA:</strong> Stop fighting the storefront. Fight the warehouse. A GitHub Pages frontend is 500 lines of HTML/JS, zero hosting costs, infinite replicability, 30-second deploy time. A CDN carrying live video is terabytes of bandwidth, $50-100/month cost, physical infrastructure, 6-12 hour rebuild time. <strong>The CDN is the weak point. The CDN is always the weak point.</strong>
+            </div>
+        </div>
+
+        <div id="report-quickref" class="report-panel">
+            <h2>⚡ How to Stop Them — Quick Reference</h2>
+            <p><strong>Match-Day Tactical Guide</strong> | <strong>Date: 2026-06-14</strong></p>
+
+            <h3>The 5 Kill Switches (In Order of Impact)</h3>
+
+            <h4>1. KILL THE API HUB — streamed.pk <span class="stars">⭐⭐⭐⭐⭐</span></h4>
+            <p><strong>Why:</strong> Without this, the entire site goes blind. No stream discovery, no CDN tokens.</p>
+            <ul>
+                <li>DMCA takedown to hosting provider + registrar</li>
+                <li>Monitor for re-emergence under .xyz, .top, .click, .live</li>
+                <li>Deploy crawlers fingerprinting API pattern (<code>/api/sports</code>, <code>/api/matches/live</code>, <code>/api/stream/*</code>)</li>
+            </ul>
+            <p><strong>Impact:</strong> Site dies in minutes</p>
+
+            <h4>2. KILL THE CDN — lb8.strmd.st <span class="stars">⭐⭐⭐⭐⭐</span></h4>
+            <p><strong>Why:</strong> This serves the actual video. No CDN = no stream.</p>
+            <ul>
+                <li>Identify hosting provider via ASN/WHOIS</li>
+                <li>Issue abuse report + copyright notice</li>
+                <li>Court-ordered IP blocking (Italy's Piracy Shield: 30-min mandate)</li>
+                <li>Block alternative DNS providers used for circumvention</li>
+            </ul>
+            <p><strong>Impact:</strong> Stream stops immediately</p>
+
+            <h4>3. KILL THE TWITCH RE-STREAM — adiiixexe <span class="stars">⭐⭐⭐⭐</span></h4>
+            <p><strong>Why:</strong> Backup stream + chat. Removes redundancy and community hub.</p>
+            <ul>
+                <li>File DMCA with Twitch (channel ID: 1033682916)</li>
+                <li>Request immediate account termination</li>
+                <li>Monitor chat for new domain intelligence</li>
+            </ul>
+            <p><strong>Impact:</strong> Removes backup, degrades UX</p>
+
+            <h4>4. KILL THE FRONTEND — livsport.dpdns.org <span class="stars">⭐⭐⭐</span></h4>
+            <p><strong>Why:</strong> Disposable, but kills discoverability.</p>
+            <ul>
+                <li>Abuse report to dpdns.org (free dynamic DNS — TOS violation)</li>
+                <li>Search engine de-indexing (Google, Bing, DuckDuckGo)</li>
+                <li>Monitor subdomain registrations for patterns</li>
+            </ul>
+            <p><strong>Impact:</strong> They rebuild in 30 min, but loses SEO/traffic</p>
+
+            <h4>5. POISON THE TELEMETRY — ann.cdn-lab.shop <span class="stars">⭐⭐</span></h4>
+            <p><strong>Why:</strong> Distorts their analytics, degrades monetization.</p>
+            <ul>
+                <li>Inject false beacon data (fake viewer counts, wrong geo)</li>
+                <li>Flood WebSocket signalling endpoint to break P2P mesh</li>
+                <li>Takedown hosting provider for signalling domain</li>
+            </ul>
+            <p><strong>Impact:</strong> Harassment tactic, not kill shot</p>
+
+            <h3>Legal Weapons by Jurisdiction</h3>
+            <table>
+                <tr><th>Country</th><th>Tool</th><th>Speed</th><th>Effectiveness</th></tr>
+                <tr><td>Italy</td><td>AGCOM Piracy Shield</td><td>30 min</td><td class="stars">⭐⭐⭐⭐⭐</td></tr>
+                <tr><td>France</td><td>ARCOM + VPN blocking</td><td>24-48 hrs</td><td class="stars">⭐⭐⭐⭐⭐</td></tr>
+                <tr><td>UK</td><td>High Court blocking orders</td><td>1-2 weeks</td><td class="stars">⭐⭐⭐⭐</td></tr>
+                <tr><td>India</td><td>Dynamic injunctions (Delhi HC)</td><td>24-48 hrs</td><td class="stars">⭐⭐⭐⭐</td></tr>
+                <tr><td>Brazil</td><td>Local broadcast rights enforcement</td><td>1-2 weeks</td><td class="stars">⭐⭐⭐</td></tr>
+            </table>
+
+            <h3>The Attrition Strategy</h3>
+            <div class="highlight-box">
+                <strong>Pirate rebuild time:</strong> ~6 hours<br>
+                <strong>Your takedown cycle:</strong> Every 6 hours<br>
+                <strong>Duration:</strong> 30 days (tournament length)<br>
+                <strong>Result:</strong> Operator gives up or goes bankrupt<br><br>
+                <strong>This is a war of resources. FIFA has the deeper pockets. Use them.</strong>
+            </div>
+
+            <h3>Immediate Action Checklist (24 Hours)</h3>
+            <ul class="checklist">
+                <li>Issue takedown notices to streamed.pk hosting provider and registrar</li>
+                <li>File DMCA complaint with Twitch for channel adiiixexe</li>
+                <li>Submit abuse report to dpdns.org for livsport subdomain</li>
+                <li>Identify and contact strmd.st hosting provider / CDN operator</li>
+                <li>Add all domains to monitoring watchlist</li>
+                <li>Capture HLS manifests and video segments as evidence</li>
+                <li>Record WHOIS, DNS, and ASN data for all domains</li>
+                <li>File for dynamic injunctions in India, UK, France, Italy, Brazil</li>
+                <li>Coordinate with ISPs for real-time blocking during matches</li>
+                <li>Deploy forensic watermarking on all broadcast feeds</li>
+            </ul>
         </div>
     </div>
 
     <script>
         // ============================================================
-        // PURE CLIENT-SIDE STREAMING — NO BACKEND NEEDED
+        // DYNAMIC MATCH LOADING — NO HARDCODED LIST
         // ============================================================
 
+        const API_BASE = 'http://localhost:8000';
+        let matches = [];
+        let currentMatch = null;
+        let hls = null;
         const video = document.getElementById('video');
         const overlay = document.getElementById('overlay');
-        let hls = null;
 
-        // Stream data — in a real piracy site, this comes from an external API
-        // or a JSON file hosted on another GitHub repo / gist / CDN
-        const STREAMS = {
-            admin: {
-                name: 'ADMIN',
-                quality: '1080p',
-                // Demo stream — replace with actual HLS URL
-                url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8',
-                backup: 'https://backup-cdn.example.com/admin/bra-mar.m3u8'
-            },
-            delta: {
-                name: 'DELTA',
-                quality: '720p',
-                url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8',
-                backup: null
-            },
-            echo: {
-                name: 'ECHO',
-                quality: '1080p',
-                url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8',
-                backup: null
-            },
-            golf: {
-                name: 'GOLF',
-                quality: '480p',
-                url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8',
-                backup: null
+        // ============================================================
+        // TAB SWITCHING
+        // ============================================================
+
+        function showTab(tab) {
+            document.querySelectorAll('.topbar nav button').forEach(b => b.classList.remove('active'));
+            document.getElementById('btn-' + tab).classList.add('active');
+
+            if (tab === 'demo') {
+                document.getElementById('tab-demo').style.display = 'grid';
+                document.getElementById('tab-reports').classList.remove('active');
+            } else {
+                document.getElementById('tab-demo').style.display = 'none';
+                document.getElementById('tab-reports').classList.add('active');
             }
-        };
+        }
 
-        async function loadStream(source) {
-            const stream = STREAMS[source];
-            if (!stream) return;
+        function showReport(report) {
+            document.querySelectorAll('.report-tabs button').forEach(b => b.classList.remove('active'));
+            document.getElementById('btn-' + report).classList.add('active');
+            document.querySelectorAll('.report-panel').forEach(p => p.classList.remove('active'));
+            document.getElementById('report-' + report).classList.add('active');
+        }
+
+        // ============================================================
+        // API STATUS
+        // ============================================================
+
+        function setApiStatus(online, text) {
+            const el = document.getElementById('api-status');
+            const txt = document.getElementById('api-status-text');
+            el.className = 'api-status ' + (online ? 'online' : 'offline');
+            txt.textContent = text;
+        }
+
+        // ============================================================
+        // FETCH MATCHES DYNAMICALLY FROM API
+        // ============================================================
+
+        async function loadMatches() {
+            const select = document.getElementById('match-select');
+
+            try {
+                // Try to fetch from backend API (mirrors real streamed.pk behavior)
+                const controller = new AbortController();
+                const timeout = setTimeout(() => controller.abort(), 5000);
+
+                const res = await fetch(`${API_BASE}/api/matches/all`, { signal: controller.signal });
+                clearTimeout(timeout);
+
+                if (!res.ok) throw new Error('API returned ' + res.status);
+
+                const data = await res.json();
+                matches = data.matches || [];
+
+                if (matches.length === 0) {
+                    throw new Error('No matches returned from API');
+                }
+
+                setApiStatus(true, `API Online — ${matches.length} matches loaded from localhost:8000`);
+
+                // Populate dropdown
+                select.innerHTML = '';
+                matches.forEach(match => {
+                    const option = document.createElement('option');
+                    option.value = match.id;
+                    option.textContent = `${match.home} vs ${match.away} — ${match.league}`;
+                    select.appendChild(option);
+                });
+                select.disabled = false;
+
+                // Load first match
+                changeMatch(matches[0].id);
+
+            } catch (err) {
+                console.error('Failed to load matches:', err);
+                setApiStatus(false, 'API Offline — Backend not running on localhost:8000');
+
+                // Show error with instructions
+                document.getElementById('error-container').innerHTML = `
+                    <div class="error-box">
+                        <h3>❌ Backend API Not Running</h3>
+                        <p>The match list is fetched dynamically from <code>http://localhost:8000/api/matches/all</code> — no matches are hardcoded in this HTML file.</p>
+                        <p><strong>To fix this, start the backend services:</strong></p>
+                        <ol>
+                            <li>Open terminal in the <code>piracy_stack_replica</code> folder</li>
+                            <li>Run: <code>docker-compose up --build</code></li>
+                            <li>Wait 30-60 seconds for all services to start</li>
+                            <li>Refresh this page</li>
+                        </ol>
+                        <p style="margin-top:15px; color:#888; font-size:12px;">
+                            Or start manually: <code>cd backend && uvicorn api:app --host 0.0.0.0 --port 8000 --reload</code>
+                        </p>
+                    </div>
+                `;
+
+                // Keep dropdown disabled but show message
+                select.innerHTML = '<option value="">Start backend to load matches dynamically...</option>';
+            }
+        }
+
+        // ============================================================
+        // CHANGE MATCH
+        // ============================================================
+
+        async function changeMatch(matchId) {
+            currentMatch = matchId;
+            const match = matches.find(m => m.id === matchId);
+            if (!match) return;
+
+            // Update header
+            document.querySelector('.header h1').innerHTML = `${match.home} <span class="vs">vs</span> ${match.away}`;
+            document.querySelector('.header .meta').innerHTML = `${match.league} <span class="live">● ${match.status.toUpperCase()}</span>`;
+            document.getElementById('match-status').textContent = `${match.status.toUpperCase()} — ${match.kickoff}`;
+            document.getElementById('overlay-title').textContent = `${match.home} vs ${match.away}`;
+
+            // Reset player
+            if (hls) { hls.destroy(); hls = null; }
+            video.src = '';
+            overlay.classList.remove('hidden');
+
+            // Fetch stream metadata for this match
+            try {
+                const res = await fetch(`${API_BASE}/api/stream/admin/ppv-${matchId}`);
+                if (res.ok) {
+                    const streamData = await res.json();
+                    console.log('Stream metadata:', streamData);
+                }
+            } catch (e) {
+                // Stream fetch is optional for demo
+            }
+
+            // Enable stream buttons
+            document.querySelectorAll('.stream-btn').forEach(btn => btn.disabled = false);
+
+            // Load chat
+            loadChat(match);
+        }
+
+        // ============================================================
+        // STREAM LOADING
+        // ============================================================
+
+        function loadStream(source) {
+            if (!currentMatch) return;
 
             // Update UI
             document.querySelectorAll('.stream-btn').forEach(btn => btn.classList.remove('active'));
             event.target.closest('.stream-btn').classList.add('active');
-
             overlay.classList.add('hidden');
 
-            // Destroy previous HLS instance
-            if (hls) {
-                hls.destroy();
-                hls = null;
-            }
+            // Destroy previous HLS
+            if (hls) { hls.destroy(); hls = null; }
 
-            // Load stream with HLS.js
+            // Demo stream URL (test stream from Mux)
+            const demoUrl = 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8';
+
+            // Load with HLS.js
             if (Hls.isSupported()) {
-                hls = new Hls({
-                    maxBufferLength: 30,
-                    liveSyncDurationCount: 3,
-                    enableWorker: true
-                });
-
-                hls.loadSource(stream.url);
+                hls = new Hls({ maxBufferLength: 30, liveSyncDurationCount: 3, enableWorker: true });
+                hls.loadSource(demoUrl);
                 hls.attachMedia(video);
-
-                hls.on(Hls.Events.MANIFEST_PARSED, function() {
-                    video.play();
-                    console.log(`Loaded ${stream.name} — ${stream.quality}`);
-                });
-
-                hls.on(Hls.Events.ERROR, function(event, data) {
-                    if (data.fatal) {
-                        console.error('Stream error:', data);
-                        if (stream.backup) {
-                            console.log('Switching to backup...');
-                            hls.loadSource(stream.backup);
-                        }
-                    }
-                });
-
+                hls.on(Hls.Events.MANIFEST_PARSED, () => video.play());
             } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                video.src = stream.url;
+                video.src = demoUrl;
                 video.play();
-            } else {
-                alert('HLS not supported in this browser');
             }
         }
 
-        // Simulated chat updates
-        const chatMessages = [
-            { user: 'adiiixexe', msg: 'Stream working great! 🔥' },
-            { user: 'brazilfan99', msg: 'VAMOS BRAZIL 🇧🇷' },
-            { user: 'moroocco', msg: 'lets go atlas lions 🦁' },
-            { user: 'streamer_mod', msg: 'Backup links in bio if main goes down' },
-            { user: 'anon42', msg: 'admin source is clearest' },
-            { user: 'newuser', msg: 'how do i full screen?' },
-            { user: 'mod', msg: 'click the video, bottom right corner' },
-            { user: 'footyfan', msg: 'that goal was offside fr' },
-        ];
+        // ============================================================
+        // CHAT
+        // ============================================================
 
-        function addChatMessage() {
+        function loadChat(match) {
             const chat = document.getElementById('chat');
-            const msg = chatMessages[Math.floor(Math.random() * chatMessages.length)];
-            const div = document.createElement('div');
-            div.className = 'chat-msg';
-            div.innerHTML = `<span class="user">${msg.user}:</span> ${msg.msg}`;
-            chat.appendChild(div);
-            chat.scrollTop = chat.scrollHeight;
+            chat.innerHTML = '';
+
+            const messages = [
+                { user: 'adiiixexe', msg: `Stream for ${match.home} vs ${match.away} is up! 🔥`, time: '18:02' },
+                { user: 'fan1', msg: `Let's go ${match.home}!`, time: '18:03' },
+                { user: 'fan2', msg: `${match.away} will win this!`, time: '18:03' },
+                { user: 'mod', msg: 'Backup links in bio if main goes down', time: '18:04' },
+                { user: 'viewer', msg: 'admin source is clearest', time: '18:05' },
+            ];
+
+            messages.forEach(msg => {
+                const div = document.createElement('div');
+                div.className = 'chat-msg';
+                div.innerHTML = `<span class="user">${msg.user}:</span> ${msg.msg} <span class="time">${msg.time}</span>`;
+                chat.appendChild(div);
+            });
         }
 
-        setInterval(addChatMessage, 3000);
+        // ============================================================
+        // URL PARAMETER SUPPORT
+        // ============================================================
 
-        // Telemetry beacon (simulated)
+        function initFromURL() {
+            const params = new URLSearchParams(window.location.search);
+            const matchId = params.get('match') || params.get('id');
+            if (matchId) {
+                // Will be selected after matches load
+                window.__preselectedMatch = matchId;
+            }
+        }
+
+        // ============================================================
+        // TELEMETRY
+        // ============================================================
+
         (function() {
             const beacon = {
-                channel: 'brazil-vs-morocco-2391730',
+                channel: currentMatch || 'unknown',
                 client: 'web',
                 player: 'hls.js',
                 origin: window.location.href,
                 timestamp: Date.now(),
-                userAgent: navigator.userAgent,
-                screen: `${screen.width}x${screen.height}`
+                userAgent: navigator.userAgent
             };
-            console.log('Telemetry beacon:', beacon);
+            console.log('📡 Telemetry beacon:', beacon);
         })();
+
+        // ============================================================
+        // INIT
+        // ============================================================
+
+        window.onload = () => {
+            initFromURL();
+            loadMatches();
+        };
     </script>
 </body>
 </html>
