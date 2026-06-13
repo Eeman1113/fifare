@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Sports — Brazil vs Morocco</title>
+    <!-- HLS.js from CDN — pure client-side, no backend needed -->
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #0a0a0a; color: #fff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+        .header { text-align: center; padding: 25px 20px; border-bottom: 1px solid #222; }
+        .header h1 { font-size: 2rem; font-weight: 700; }
+        .vs { color: #e74c3c; margin: 0 12px; }
+        .meta { margin-top: 8px; color: #888; font-size: 0.9rem; }
+        .live { color: #e74c3c; font-weight: 600; animation: pulse 2s infinite; }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .video-area { display: grid; grid-template-columns: 1fr 320px; gap: 20px; }
+        .player-wrapper { background: #000; border-radius: 10px; overflow: hidden; aspect-ratio: 16/9; position: relative; }
+        #video { width: 100%; height: 100%; object-fit: contain; }
+        .player-overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: #000; z-index: 10; }
+        .player-overlay.hidden { display: none; }
+        .streams { margin-top: 18px; }
+        .streams h3 { color: #666; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+        .stream-btn { background: #151515; border: 1px solid #2a2a2a; color: #fff; padding: 10px 18px; margin: 0 6px 6px 0; border-radius: 6px; cursor: pointer; font-size: 0.85rem; transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px; }
+        .stream-btn:hover { border-color: #e74c3c; background: #1a1a1a; }
+        .stream-btn.active { background: #e74c3c; border-color: #e74c3c; color: #fff; }
+        .quality-badge { background: #333; color: #aaa; font-size: 0.7rem; padding: 2px 6px; border-radius: 3px; }
+        .stream-btn.active .quality-badge { background: rgba(255,255,255,0.2); color: #fff; }
+        .chat-panel { background: #111; border-radius: 10px; overflow: hidden; }
+        .chat-header { padding: 14px 16px; background: #1a1a1a; border-bottom: 1px solid #222; display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; }
+        .chat-body { height: 400px; background: #0a0a0a; padding: 12px; overflow-y: auto; }
+        .chat-msg { color: #666; font-size: 0.8rem; margin-bottom: 8px; padding: 6px 10px; background: #151515; border-radius: 4px; }
+        .chat-msg .user { color: #e74c3c; font-weight: 600; }
+        .info-box { background: #111; border: 1px solid #222; border-radius: 8px; padding: 16px; margin-top: 20px; font-size: 0.8rem; color: #666; }
+        .info-box code { background: #1a1a1a; padding: 2px 6px; border-radius: 3px; font-family: 'Courier New', monospace; color: #aaa; }
+        @media (max-width: 900px) { .video-area { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Brazil <span class="vs">vs</span> Morocco</h1>
+        <div class="meta">FIFA World Cup 2026 <span class="live">● LIVE</span></div>
+    </div>
+
+    <div class="container">
+        <div class="video-area">
+            <div>
+                <div class="player-wrapper">
+                    <div class="player-overlay" id="overlay">
+                        <div style="text-align:center;">
+                            <div style="font-size:1.2rem; margin-bottom:8px;">⚡ Select a mirror to start</div>
+                            <div style="color:#555; font-size:0.85rem;">No backend required — pure client-side</div>
+                        </div>
+                    </div>
+                    <video id="video" controls autoplay muted></video>
+                </div>
+
+                <div class="streams">
+                    <h3>Mirror Sources</h3>
+                    <button class="stream-btn active" onclick="loadStream('admin')">
+                        ADMIN <span class="quality-badge">1080p</span>
+                    </button>
+                    <button class="stream-btn" onclick="loadStream('delta')">
+                        DELTA <span class="quality-badge">720p</span>
+                    </button>
+                    <button class="stream-btn" onclick="loadStream('echo')">
+                        ECHO <span class="quality-badge">1080p</span>
+                    </button>
+                    <button class="stream-btn" onclick="loadStream('golf')">
+                        GOLF <span class="quality-badge">480p</span>
+                    </button>
+                </div>
+
+                <div class="info-box">
+                    <strong>🔍 How this works (no backend needed):</strong><br><br>
+                    1. This page is <strong>static HTML</strong> hosted on GitHub Pages (free CDN)<br>
+                    2. <strong>HLS.js</strong> (loaded from CDN) plays video directly in browser<br>
+                    3. Stream URLs are fetched from <strong>external APIs</strong> (streamed.pk style) or hardcoded<br>
+                    4. The "backend" is just <strong>JSON data</strong> — could be another GitHub repo, a gist, or an external API<br>
+                    5. <strong>Zero server costs</strong>, <strong>zero maintenance</strong>, <strong>instant global deploy</strong><br><br>
+                    <strong>Architecture:</strong> GitHub Pages (frontend shell) → HLS.js (browser) → External CDN (video) → External API (stream metadata)
+                </div>
+            </div>
+
+            <div class="chat-panel">
+                <div class="chat-header">
+                    <span>Live Chat</span>
+                    <span style="color:#666; font-size:0.75rem;">1,247 online</span>
+                </div>
+                <div class="chat-body" id="chat">
+                    <div class="chat-msg"><span class="user">adiiixexe:</span> Stream working great! 🔥</div>
+                    <div class="chat-msg"><span class="user">brazilfan99:</span> VAMOS BRAZIL 🇧🇷</div>
+                    <div class="chat-msg"><span class="user">moroocco:</span> lets go atlas lions 🦁</div>
+                    <div class="chat-msg"><span class="user">streamer_mod:</span> Backup links in bio if main goes down</div>
+                    <div class="chat-msg"><span class="user">anon42:</span> admin source is clearest</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================================
+        // PURE CLIENT-SIDE STREAMING — NO BACKEND NEEDED
+        // ============================================================
+
+        const video = document.getElementById('video');
+        const overlay = document.getElementById('overlay');
+        let hls = null;
+
+        // Stream data — in a real piracy site, this comes from an external API
+        // or a JSON file hosted on another GitHub repo / gist / CDN
+        const STREAMS = {
+            admin: {
+                name: 'ADMIN',
+                quality: '1080p',
+                // Demo stream — replace with actual HLS URL
+                url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8',
+                backup: 'https://backup-cdn.example.com/admin/bra-mar.m3u8'
+            },
+            delta: {
+                name: 'DELTA',
+                quality: '720p',
+                url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8',
+                backup: null
+            },
+            echo: {
+                name: 'ECHO',
+                quality: '1080p',
+                url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8',
+                backup: null
+            },
+            golf: {
+                name: 'GOLF',
+                quality: '480p',
+                url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8',
+                backup: null
+            }
+        };
+
+        async function loadStream(source) {
+            const stream = STREAMS[source];
+            if (!stream) return;
+
+            // Update UI
+            document.querySelectorAll('.stream-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.closest('.stream-btn').classList.add('active');
+
+            overlay.classList.add('hidden');
+
+            // Destroy previous HLS instance
+            if (hls) {
+                hls.destroy();
+                hls = null;
+            }
+
+            // Load stream with HLS.js
+            if (Hls.isSupported()) {
+                hls = new Hls({
+                    maxBufferLength: 30,
+                    liveSyncDurationCount: 3,
+                    enableWorker: true
+                });
+
+                hls.loadSource(stream.url);
+                hls.attachMedia(video);
+
+                hls.on(Hls.Events.MANIFEST_PARSED, function() {
+                    video.play();
+                    console.log(`Loaded ${stream.name} — ${stream.quality}`);
+                });
+
+                hls.on(Hls.Events.ERROR, function(event, data) {
+                    if (data.fatal) {
+                        console.error('Stream error:', data);
+                        if (stream.backup) {
+                            console.log('Switching to backup...');
+                            hls.loadSource(stream.backup);
+                        }
+                    }
+                });
+
+            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                video.src = stream.url;
+                video.play();
+            } else {
+                alert('HLS not supported in this browser');
+            }
+        }
+
+        // Simulated chat updates
+        const chatMessages = [
+            { user: 'adiiixexe', msg: 'Stream working great! 🔥' },
+            { user: 'brazilfan99', msg: 'VAMOS BRAZIL 🇧🇷' },
+            { user: 'moroocco', msg: 'lets go atlas lions 🦁' },
+            { user: 'streamer_mod', msg: 'Backup links in bio if main goes down' },
+            { user: 'anon42', msg: 'admin source is clearest' },
+            { user: 'newuser', msg: 'how do i full screen?' },
+            { user: 'mod', msg: 'click the video, bottom right corner' },
+            { user: 'footyfan', msg: 'that goal was offside fr' },
+        ];
+
+        function addChatMessage() {
+            const chat = document.getElementById('chat');
+            const msg = chatMessages[Math.floor(Math.random() * chatMessages.length)];
+            const div = document.createElement('div');
+            div.className = 'chat-msg';
+            div.innerHTML = `<span class="user">${msg.user}:</span> ${msg.msg}`;
+            chat.appendChild(div);
+            chat.scrollTop = chat.scrollHeight;
+        }
+
+        setInterval(addChatMessage, 3000);
+
+        // Telemetry beacon (simulated)
+        (function() {
+            const beacon = {
+                channel: 'brazil-vs-morocco-2391730',
+                client: 'web',
+                player: 'hls.js',
+                origin: window.location.href,
+                timestamp: Date.now(),
+                userAgent: navigator.userAgent,
+                screen: `${screen.width}x${screen.height}`
+            };
+            console.log('Telemetry beacon:', beacon);
+        })();
+    </script>
+</body>
+</html>
